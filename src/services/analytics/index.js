@@ -6,7 +6,7 @@ import { findFareFamily, findOffer } from "../../lib/pricing"
 import packageJson from "../../../package.json"
 
 /**
- * Analytics facade (docs/AMPLI-CLI.md §3): the only module allowed to
+ * Analytics facade (docs/AMPLI-CLI.md): the only module allowed to
  * import src/ampli. Callers pass camelCase domain data; the snake_case
  * event-property convention and all tracking-plan vocabulary mappings
  * stay contained here.

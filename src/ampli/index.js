@@ -83,6 +83,13 @@ export const DefaultConfiguration = {
   }
 };
 
+export class Identify {
+  constructor(properties) {
+    this.event_type = amplitude.Types.SpecialEventType.IDENTIFY;
+    this.event_properties = properties;
+  }
+}
+
 export class BookingConfirmationViewed {
   constructor(properties) {
     this.event_type = 'Booking Confirmation Viewed';
@@ -301,14 +308,21 @@ export class Ampli {
   }
 
   /**
-   * Identify a user.
+   * Identify a user and set or update that user's properties.
    *
    * @param {string|undefined} userId The user's id.
+   * @param {Object} [properties] The user's properties.
+   * @param {string} [properties.first_search_date] Data da primeira busca registrada
+   * @param {boolean} [properties.is_logged_in] Usuario autenticado
+   * @param {'none'|'silver'|'gold'|'diamond'} [properties.loyalty_tier] Nivel no programa de fidelidade
+   * @param {'economy'|'premium_economy'|'business'} [properties.preferred_cabin] Cabine mais frequentemente escolhida
+   * @param {'app'|'web'|'partner'} [properties.signup_channel] Canal de origem do cadastro
+   * @param {number} [properties.total_bookings_count] Reservas concluidas historicamente
    * @param {EventOptions} [options] Optional event options.
    *
    * @return {PromiseResult}
    */
-  identify(userId, options) {
+  identify(userId, properties, options) {
     if (!this.isInitializedAndEnabled()) {
       return getVoidPromiseResult();
     }
@@ -318,6 +332,12 @@ export class Ampli {
     }
 
     const ampIdentify = new amplitude.Identify();
+    const eventProperties = properties;
+    if (eventProperties != null) {
+      for (const [key, value] of Object.entries(eventProperties)) {
+        ampIdentify.set(key, value);
+      }
+    }
     return this.amplitude.identify(ampIdentify, options);
   }
 
