@@ -3,12 +3,12 @@
   "OrgId": "93344",
   "WorkspaceId": "ff2c4e1f-89fb-4879-aea2-fb778b1050d0",
   "SourceId": "e9b5c69d-22ed-433a-9d58-c1b8f4812513",
-  "Branch": "import",
-  "Version": "1.0.0",
-  "VersionId": "cd579d7f-c2ad-465f-b7d3-bb0784ecdd16",
   "Runtime": "browser:javascript-ampli-v2",
   "Platform": "Browser",
   "Language": "JavaScript",
   "SDK": "@amplitude/analytics-browser@^1.0",
+  "Branch": "import",
+  "Version": "2.0.0",
+  "VersionId": "4a25e1b7-3bf1-43bf-92c1-0a43c7ae23c9",
   "Path": "./src/ampli"
 }
