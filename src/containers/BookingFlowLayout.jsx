@@ -1,8 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import { Outlet, useLocation } from "react-router-dom"
+import { Outlet, useLocation, useNavigate } from "react-router-dom"
 import StepIndicator from "@/components/layout/StepIndicator"
-import { ampli } from "@/ampli"
-import packageJson from "../../package.json"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { trackLogoClicked, trackScreenViewed } from "@/services/analytics"
 
 /**
  * Screen Viewed: booking_step/screen_name per route. Every step of the
@@ -11,12 +20,12 @@ import packageJson from "../../package.json"
  * container.
  */
 const SCREEN_BY_PATH = {
-  "/buscar": { screen_name: "home", booking_step: "search" },
-  "/selecionar": { screen_name: "flight_selection", booking_step: "select" },
-  "/passageiros": { screen_name: "passenger_details", booking_step: "passenger" },
-  "/revisao": { screen_name: "booking_review", booking_step: "review" },
-  "/pagamento": { screen_name: "payment", booking_step: "payment" },
-  "/confirmacao": { screen_name: "confirmation", booking_step: "confirmation" },
+  "/buscar": { screenName: "home", bookingStep: "search" },
+  "/selecionar": { screenName: "flight_selection", bookingStep: "select" },
+  "/passageiros": { screenName: "passenger_details", bookingStep: "passenger" },
+  "/revisao": { screenName: "booking_review", bookingStep: "review" },
+  "/pagamento": { screenName: "payment", bookingStep: "payment" },
+  "/confirmacao": { screenName: "confirmation", bookingStep: "confirmation" },
 }
 
 /**
@@ -31,24 +40,25 @@ export default function BookingFlowLayout() {
   const [selectedTrip, setSelectedTrip] = useState(null)
   const [passengers, setPassengers] = useState(null)
   const [order, setOrder] = useState(null)
+  const [showRestartDialog, setShowRestartDialog] = useState(false)
 
+  const navigate = useNavigate()
   const location = useLocation()
   const referrerScreen = useRef(undefined)
+  const lastTrackedPath = useRef(null)
 
   useEffect(() => {
     const screen = SCREEN_BY_PATH[location.pathname]
-    if (!screen) return
+    // Path dedupe guards against StrictMode's double-invoked dev effects
+    if (!screen || lastTrackedPath.current === location.pathname) return
 
-    ampli.screenViewed({
-      app_version: packageJson.version,
-      booking_step: screen.booking_step,
-      environment: import.meta.env.DEV ? "development" : "production",
-      locale: navigator.language,
-      platform: "web",
-      referrer_screen: referrerScreen.current,
-      screen_name: screen.screen_name,
+    lastTrackedPath.current = location.pathname
+    trackScreenViewed({
+      screenName: screen.screenName,
+      bookingStep: screen.bookingStep,
+      referrerScreen: referrerScreen.current,
     })
-    referrerScreen.current = screen.screen_name
+    referrerScreen.current = screen.screenName
   }, [location.pathname])
 
   const resetAfterSearch = useCallback(() => {
@@ -65,9 +75,42 @@ export default function BookingFlowLayout() {
     setOrder(null)
   }, [])
 
+  function handleLogoClick(event) {
+    trackLogoClicked({ screenName: SCREEN_BY_PATH[location.pathname]?.screenName })
+
+    // A journey in progress is lost by restarting, so ask first. A
+    // completed journey (order issued) has nothing to lose — reset and go.
+    if (criteria && !order) {
+      event.preventDefault()
+      setShowRestartDialog(true)
+    } else if (order) {
+      resetFlow()
+    }
+  }
+
+  function confirmRestart() {
+    setShowRestartDialog(false)
+    resetFlow()
+    navigate("/")
+  }
+
   return (
     <div className="mx-auto flex min-h-svh max-w-5xl flex-col px-4 py-6 sm:px-6 lg:px-8">
-      <StepIndicator />
+      <StepIndicator onLogoClick={handleLogoClick} />
+      <AlertDialog open={showRestartDialog} onOpenChange={setShowRestartDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Começar uma nova busca?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você perderá o progresso desta reserva.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Continuar reserva</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRestart}>Nova busca</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <main className="flex-1 py-6">
         <Outlet
           context={{

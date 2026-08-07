@@ -37,6 +37,7 @@ export default function OffersLegSection({
   selectedFlightNumber,
   selectedFareFamilyId,
   onSelectFare,
+  onFilterApplied,
 }) {
   const [sortBy, setSortBy] = useState("price")
   const [directOnly, setDirectOnly] = useState(false)
@@ -45,6 +46,25 @@ export default function OffersLegSection({
     const filtered = directOnly ? offers.filter((offer) => offer.stops === 0) : offers
     return [...filtered].sort(SORTERS[sortBy])
   }, [offers, sortBy, directOnly])
+
+  function visibleCount(direct) {
+    return direct ? offers.filter((offer) => offer.stops === 0).length : offers.length
+  }
+
+  function handleSortChange(value) {
+    setSortBy(value)
+    onFilterApplied?.({
+      filterType: value,
+      sortBy: value,
+      resultCountAfter: visibleCount(directOnly),
+    })
+  }
+
+  function handleDirectOnlyChange(checked) {
+    const next = checked === true
+    setDirectOnly(next)
+    onFilterApplied?.({ filterType: "stops", resultCountAfter: visibleCount(next) })
+  }
 
   return (
     <section className="space-y-3">
@@ -55,13 +75,13 @@ export default function OffersLegSection({
             <Checkbox
               id={`direct-only-${title}`}
               checked={directOnly}
-              onCheckedChange={(checked) => setDirectOnly(checked === true)}
+              onCheckedChange={handleDirectOnlyChange}
             />
             <Label htmlFor={`direct-only-${title}`} className="text-sm font-normal">
               Somente voos diretos
             </Label>
           </div>
-          <Select value={sortBy} onValueChange={setSortBy}>
+          <Select value={sortBy} onValueChange={handleSortChange}>
             <SelectTrigger className="w-44" aria-label="Ordenar resultados">
               <SelectValue />
             </SelectTrigger>
@@ -82,14 +102,16 @@ export default function OffersLegSection({
         </p>
       ) : (
         <div className="space-y-3">
-          {visibleOffers.map((offer) => (
+          {visibleOffers.map((offer, index) => (
             <FlightOfferCard
               key={offer.flightNumber}
               offer={offer}
               selectedFareFamilyId={
                 selectedFlightNumber === offer.flightNumber ? selectedFareFamilyId : null
               }
-              onSelectFare={onSelectFare}
+              onSelectFare={(flightNumber, fareFamilyId) =>
+                onSelectFare(flightNumber, fareFamilyId, index + 1)
+              }
             />
           ))}
         </div>
@@ -104,6 +126,7 @@ OffersLegSection.propTypes = {
   selectedFlightNumber: PropTypes.string,
   selectedFareFamilyId: PropTypes.string,
   onSelectFare: PropTypes.func.isRequired,
+  onFilterApplied: PropTypes.func,
 }
 
 OffersLegSection.defaultProps = {

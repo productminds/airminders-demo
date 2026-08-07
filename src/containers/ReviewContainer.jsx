@@ -4,6 +4,12 @@ import ItineraryLegSummary from "@/components/review/ItineraryLegSummary"
 import PassengerListSummary from "@/components/review/PassengerListSummary"
 import PriceSummary from "@/components/review/PriceSummary"
 import { computePriceBreakdown, findFareFamily, findOffer } from "@/lib/pricing"
+import { useTrackOnMount } from "@/hooks/useTrackOnMount"
+import { useJourney } from "@/context/JourneyContext"
+import {
+  trackBookingDetailsConfirmed,
+  trackBookingReviewViewed,
+} from "@/services/analytics"
 
 /**
  * RF-08: step 4 — review itinerary, passengers and price composition
@@ -12,7 +18,20 @@ import { computePriceBreakdown, findFareFamily, findOffer } from "@/lib/pricing"
  */
 export default function ReviewContainer() {
   const navigate = useNavigate()
+  const { bookingId } = useJourney()
   const { criteria, results, selectedTrip, passengers } = useOutletContext()
+
+  useTrackOnMount(() => {
+    if (!criteria || !results || !selectedTrip || !passengers) return
+    trackBookingReviewViewed({
+      bookingId,
+      breakdown: computePriceBreakdown({
+        results,
+        selectedTrip,
+        passengerCount: passengers.length,
+      }),
+    })
+  })
 
   if (!criteria || !results || !selectedTrip || !passengers) {
     return <Navigate to="/buscar" replace />
@@ -33,6 +52,11 @@ export default function ReviewContainer() {
     selectedTrip,
     passengerCount: passengers.length,
   })
+
+  function handleConfirm() {
+    trackBookingDetailsConfirmed({ bookingId, totalAmount: breakdown.grandTotal })
+    navigate("/pagamento")
+  }
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -62,7 +86,7 @@ export default function ReviewContainer() {
       <PriceSummary breakdown={breakdown} />
 
       <div className="flex justify-end border-t pt-6">
-        <Button onClick={() => navigate("/pagamento")}>Ir para pagamento</Button>
+        <Button onClick={handleConfirm}>Ir para pagamento</Button>
       </div>
     </div>
   )

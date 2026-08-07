@@ -20,11 +20,30 @@ const MOCK_MILES_PER_BRL = 35
 const INSTALLMENT_OPTIONS = [1, 2, 3, 4, 5, 6, 10, 12]
 
 /**
+ * RS-02: only the brand ever leaves this component, derived from the
+ * issuer prefix — never the number itself.
+ * @param {string} cardNumber
+ * @returns {'visa'|'mastercard'|'amex'|undefined}
+ */
+function detectCardBrand(cardNumber) {
+  const digits = cardNumber.replace(/\D/g, "")
+  if (/^4/.test(digits)) return "visa"
+  if (/^5[1-5]/.test(digits)) return "mastercard"
+  if (/^3[47]/.test(digits)) return "amex"
+  return undefined
+}
+
+/**
  * RF-09/10, RS-02: collects a payment method (credit card, Pix or miles).
  * Card data is entirely mocked — only the last 4 digits ever leave this
  * component; the full number and CVV are never submitted or persisted.
  */
-export default function PaymentForm({ totalAmount, isSubmitting, onSubmit }) {
+export default function PaymentForm({
+  totalAmount,
+  isSubmitting,
+  onSubmit,
+  onMethodSelected,
+}) {
   const [method, setMethod] = useState("credit_card")
   const [cardNumber, setCardNumber] = useState("")
   const [cardHolderName, setCardHolderName] = useState("")
@@ -39,6 +58,15 @@ export default function PaymentForm({ totalAmount, isSubmitting, onSubmit }) {
     cardExpiry.trim().length > 0 &&
     cardCvv.trim().length >= 3
 
+  function handleMethodChange(nextMethod) {
+    setMethod(nextMethod)
+    onMethodSelected?.({
+      method: nextMethod,
+      milesUsedCount:
+        nextMethod === "miles" ? totalAmount * MOCK_MILES_PER_BRL : undefined,
+    })
+  }
+
   function handleSubmit(event) {
     event.preventDefault()
 
@@ -48,6 +76,7 @@ export default function PaymentForm({ totalAmount, isSubmitting, onSubmit }) {
         installments: Number(installments),
         cardHolderName,
         cardLast4: cardNumber.replace(/\D/g, "").slice(-4),
+        cardBrand: detectCardBrand(cardNumber),
       })
       return
     }
@@ -57,7 +86,7 @@ export default function PaymentForm({ totalAmount, isSubmitting, onSubmit }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <Tabs value={method} onValueChange={setMethod}>
+      <Tabs value={method} onValueChange={handleMethodChange}>
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="credit_card">Cartão</TabsTrigger>
           <TabsTrigger value="pix">Pix</TabsTrigger>
@@ -183,4 +212,5 @@ PaymentForm.propTypes = {
   totalAmount: PropTypes.number.isRequired,
   isSubmitting: PropTypes.bool.isRequired,
   onSubmit: PropTypes.func.isRequired,
+  onMethodSelected: PropTypes.func,
 }

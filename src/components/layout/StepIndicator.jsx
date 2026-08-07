@@ -1,4 +1,5 @@
-import { useLocation } from "react-router-dom"
+import { Link, useLocation } from "react-router-dom"
+import PropTypes from "prop-types"
 import { cn } from "@/lib/utils"
 
 const STEPS = [
@@ -10,15 +11,19 @@ const STEPS = [
   { path: "/confirmacao", label: "Confirmação" },
 ]
 
-export default function StepIndicator() {
+export default function StepIndicator({ onLogoClick }) {
   const { pathname } = useLocation()
   const currentIndex = STEPS.findIndex((step) => step.path === pathname)
 
   return (
     <header className="border-b pb-4">
-      <a href="/buscar" className="text-lg font-bold tracking-tight text-foreground">
+      <Link
+        to="/"
+        onClick={onLogoClick}
+        className="text-lg font-bold tracking-tight text-foreground"
+      >
         Air<span className="text-primary">Minders</span>
-      </a>
+      </Link>
 
       <ol className="mt-4 flex items-center gap-2 overflow-x-auto sm:gap-3">
         {STEPS.map((step, index) => {
@@ -54,4 +59,8 @@ export default function StepIndicator() {
       </ol>
     </header>
   )
+}
+
+StepIndicator.propTypes = {
+  onLogoClick: PropTypes.func,
 }

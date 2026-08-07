@@ -113,6 +113,7 @@ export const PAYMENT_METHOD_LABELS = {
  * @property {number} [installments] - only for credit_card
  * @property {string} [cardHolderName] - mocked, never persisted (RS-02)
  * @property {string} [cardLast4] - mocked, never persisted (RS-02)
+ * @property {'visa'|'mastercard'|'amex'} [cardBrand] - derived from the issuer prefix, never the number itself (RS-02)
  */
 
 /**

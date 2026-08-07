@@ -5,6 +5,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import ItineraryLegSummary from "@/components/review/ItineraryLegSummary"
 import PassengerListSummary from "@/components/review/PassengerListSummary"
 import { findFareFamily, findOffer } from "@/lib/pricing"
+import { useTrackOnMount } from "@/hooks/useTrackOnMount"
+import { trackBookingConfirmationViewed } from "@/services/analytics"
 
 /**
  * RF-11: step 6 — reservation locator (PNR) and purchase confirmation.
@@ -12,6 +14,14 @@ import { findFareFamily, findOffer } from "@/lib/pricing"
 export default function ConfirmationContainer() {
   const navigate = useNavigate()
   const { results, selectedTrip, passengers, order, resetFlow } = useOutletContext()
+
+  useTrackOnMount(() => {
+    if (!order) return
+    trackBookingConfirmationViewed({
+      bookingId: order.bookingId,
+      bookingReference: order.pnr,
+    })
+  })
 
   if (!results || !selectedTrip || !passengers || !order) {
     return <Navigate to="/buscar" replace />

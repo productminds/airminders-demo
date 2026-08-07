@@ -3,6 +3,14 @@ import { SearchX } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import OffersLegSection from "@/components/selection/OffersLegSection"
 import { useJourney } from "@/context/JourneyContext"
+import { computePriceBreakdown, findFareFamily, findOffer } from "@/lib/pricing"
+import {
+  trackCheckoutStarted,
+  trackFareSelected,
+  trackFlightSearchFilterApplied,
+  trackFlightSelected,
+  trackTripSelectionCompleted,
+} from "@/services/analytics"
 
 /**
  * RF-03/04/05/06: step 2 — independent outbound/inbound flight and fare
@@ -10,7 +18,7 @@ import { useJourney } from "@/context/JourneyContext"
  */
 export default function SelectionContainer() {
   const navigate = useNavigate()
-  const { ensureBookingId } = useJourney()
+  const { searchId, ensureBookingId } = useJourney()
   const { criteria, results, selectedTrip, setSelectedTrip } = useOutletContext()
 
   if (!criteria || !results) {
@@ -22,7 +30,21 @@ export default function SelectionContainer() {
   const hasInbound = !isRoundTrip || Boolean(selectedTrip?.inboundFareFamilyId)
   const canContinue = hasOutbound && hasInbound
 
-  function selectOutbound(flightNumber, fareFamilyId) {
+  function trackLegSelection(legType, offers, flightNumber, fareFamilyId, position) {
+    const offer = findOffer(offers, flightNumber)
+    const fare = findFareFamily(offer, fareFamilyId)
+    trackFlightSelected({ searchId, legType, offer, fare, position })
+    trackFareSelected({ searchId, legType, offer, fare })
+  }
+
+  function selectOutbound(flightNumber, fareFamilyId, position) {
+    trackLegSelection(
+      "outbound",
+      results.outboundOffers,
+      flightNumber,
+      fareFamilyId,
+      position
+    )
     setSelectedTrip((current) => ({
       ...current,
       outboundFlightNumber: flightNumber,
@@ -30,7 +52,14 @@ export default function SelectionContainer() {
     }))
   }
 
-  function selectInbound(flightNumber, fareFamilyId) {
+  function selectInbound(flightNumber, fareFamilyId, position) {
+    trackLegSelection(
+      "inbound",
+      results.inboundOffers,
+      flightNumber,
+      fareFamilyId,
+      position
+    )
     setSelectedTrip((current) => ({
       ...current,
       inboundFlightNumber: flightNumber,
@@ -38,8 +67,31 @@ export default function SelectionContainer() {
     }))
   }
 
+  function handleFilterApplied({ filterType, sortBy, resultCountAfter }) {
+    trackFlightSearchFilterApplied({ searchId, filterType, sortBy, resultCountAfter })
+  }
+
   function handleContinue() {
-    ensureBookingId()
+    const { grandTotal } = computePriceBreakdown({
+      results,
+      selectedTrip,
+      passengerCount: criteria.passengerAdultCount,
+    })
+    trackTripSelectionCompleted({
+      searchId,
+      tripType: criteria.tripType,
+      totalAmount: grandTotal,
+    })
+
+    // Checkout Started fires at the moment booking_id is minted (§4.2)
+    const bookingId = ensureBookingId()
+    trackCheckoutStarted({
+      searchId,
+      bookingId,
+      tripType: criteria.tripType,
+      totalAmount: grandTotal,
+      passengerTotalCount: criteria.passengerAdultCount,
+    })
     navigate("/passageiros")
   }
 
@@ -76,6 +128,7 @@ export default function SelectionContainer() {
         selectedFlightNumber={selectedTrip?.outboundFlightNumber}
         selectedFareFamilyId={selectedTrip?.outboundFareFamilyId}
         onSelectFare={selectOutbound}
+        onFilterApplied={handleFilterApplied}
       />
 
       {isRoundTrip && (
@@ -85,6 +138,7 @@ export default function SelectionContainer() {
           selectedFlightNumber={selectedTrip?.inboundFlightNumber}
           selectedFareFamilyId={selectedTrip?.inboundFareFamilyId}
           onSelectFare={selectInbound}
+          onFilterApplied={handleFilterApplied}
         />
       )}
 

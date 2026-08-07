@@ -83,13 +83,6 @@ export const DefaultConfiguration = {
   }
 };
 
-export class AncillaryAdded {
-  constructor(properties) {
-    this.event_type = 'Ancillary Added';
-    this.event_properties = properties;
-  }
-}
-
 export class BookingConfirmationViewed {
   constructor(properties) {
     this.event_type = 'Booking Confirmation Viewed';
@@ -206,12 +199,6 @@ export class PaymentMethodSelected {
   constructor(properties) {
     this.event_type = 'Payment Method Selected';
     this.event_properties = properties;
-  }
-}
-
-export class Purchase {
-  constructor() {
-    this.event_type = 'Purchase';
   }
 }
 
@@ -359,28 +346,6 @@ export class Ampli {
     }
 
     return this.amplitude.track(event, undefined, options);
-  }
-
-  /**
-   * Ancillary Added
-   *
-   * [View in Tracking Plan](https://data.amplitude.com/productminds/Gol%20Demo%20-%20Ampli%20CLI/events/import/latest/Ancillary%20Added)
-   *
-   * Disparado quando um servico adicional e incluido na reserva (opcional no escopo, recomendado para riqueza analitica).
-   *
-   * @param {Object} properties The event's properties.
-   * @param {'checked_bag'|'seat_selection'|'travel_insurance'|'priority_boarding'} properties.ancillary_type Tipo de servico adicional incluido
-   * @param {string} properties.app_version Versao da aplicacao (semver)
-   * @param {string} properties.booking_id Correlaciona com o checkout
-   * @param {'BRL'} properties.currency Moeda do valor
-   * @param {'development'|'staging'|'production'} properties.environment Ambiente de execucao
-   * @param {string} properties.locale Locale do usuario (ex: pt-BR)
-   * @param {'ios'|'android'|'web'} properties.platform Plataforma de origem do evento
-   * @param {number} properties.price_amount Preco do servico adicional
-   * @param {EventOptions} [options] Options for this track call.
-   */
-  ancillaryAdded(properties, options) {
-    return this.track(new AncillaryAdded(properties), options);
   }
 
   /**
@@ -778,19 +743,6 @@ export class Ampli {
    */
   paymentMethodSelected(properties, options) {
     return this.track(new PaymentMethodSelected(properties), options);
-  }
-
-  /**
-   * Purchase
-   *
-   * [View in Tracking Plan](https://data.amplitude.com/productminds/Gol%20Demo%20-%20Ampli%20CLI/events/import/latest/Purchase)
-   *
-Event has no description in tracking plan.
-   *
-   * @param {EventOptions} [options] Options for this track call.
-   */
-  purchase(options) {
-    return this.track(new Purchase(), options);
   }
 
   /**

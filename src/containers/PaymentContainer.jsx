@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { Navigate, useNavigate, useOutletContext } from "react-router-dom"
 import { AlertTriangle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -6,6 +6,12 @@ import PaymentForm from "@/components/payment/PaymentForm"
 import { usePayment } from "@/hooks/usePayment"
 import { useJourney } from "@/context/JourneyContext"
 import { computePriceBreakdown } from "@/lib/pricing"
+import {
+  trackPaymentDetailsSubmitted,
+  trackPaymentFailed,
+  trackPaymentMethodSelected,
+  trackPurchaseCompleted,
+} from "@/services/analytics"
 
 /**
  * RF-09/10/11/12, RS-02: step 5 — payment authorization.
@@ -13,8 +19,9 @@ import { computePriceBreakdown } from "@/lib/pricing"
 export default function PaymentContainer() {
   const navigate = useNavigate()
   const { bookingId, createOrderId } = useJourney()
-  const { results, selectedTrip, passengers, setOrder } = useOutletContext()
+  const { criteria, results, selectedTrip, passengers, setOrder } = useOutletContext()
   const { status, order, error, pay } = usePayment()
+  const attemptCount = useRef(0)
 
   useEffect(() => {
     if (status !== "success" || !order) return
@@ -22,7 +29,7 @@ export default function PaymentContainer() {
     navigate("/confirmacao")
   }, [status, order, setOrder, navigate])
 
-  if (!results || !selectedTrip || !passengers) {
+  if (!criteria || !results || !selectedTrip || !passengers) {
     return <Navigate to="/buscar" replace />
   }
 
@@ -32,8 +39,46 @@ export default function PaymentContainer() {
     passengerCount: passengers.length,
   })
 
-  function handleSubmit(payment) {
-    pay({ bookingId, payment, createOrderId })
+  function handleMethodSelected({ method, milesUsedCount }) {
+    trackPaymentMethodSelected({ bookingId, method, milesUsedCount })
+  }
+
+  async function handleSubmit(payment) {
+    attemptCount.current += 1
+
+    // Intent event on submit; the outcome pair below fires only from the
+    // mock-api's actual response — never optimistically.
+    trackPaymentDetailsSubmitted({
+      bookingId,
+      payment,
+      totalAmount: breakdown.grandTotal,
+    })
+
+    const { order: confirmedOrder, error: paymentError } = await pay({
+      bookingId,
+      payment,
+      createOrderId,
+    })
+
+    if (confirmedOrder) {
+      trackPurchaseCompleted({
+        order: confirmedOrder,
+        criteria,
+        results,
+        selectedTrip,
+        passengers,
+        payment,
+        breakdown,
+      })
+    } else {
+      trackPaymentFailed({
+        bookingId,
+        payment,
+        totalAmount: breakdown.grandTotal,
+        attemptCount: attemptCount.current,
+        mockErrorType: paymentError?.type,
+      })
+    }
   }
 
   return (
@@ -59,6 +104,7 @@ export default function PaymentContainer() {
         totalAmount={breakdown.grandTotal}
         isSubmitting={status === "loading"}
         onSubmit={handleSubmit}
+        onMethodSelected={handleMethodSelected}
       />
     </div>
   )

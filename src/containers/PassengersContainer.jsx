@@ -1,13 +1,19 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Navigate, useNavigate, useOutletContext } from "react-router-dom"
 import { AlertTriangle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import PassengerForm from "@/components/passengers/PassengerForm"
 import { usePassengerSubmit } from "@/hooks/usePassengerSubmit"
+import { useTrackOnMount } from "@/hooks/useTrackOnMount"
 import { useJourney } from "@/context/JourneyContext"
 import { validatePassenger } from "@/lib/validators"
 import { generateId } from "@/lib/ids"
+import {
+  trackPassengerDetailsStarted,
+  trackPassengerDetailsSubmitted,
+  trackPassengerDetailsValidationFailed,
+} from "@/services/analytics"
 
 function emptyPassenger() {
   return {
@@ -37,6 +43,29 @@ export default function PassengersContainer() {
     Array.from({ length: criteria?.passengerAdultCount ?? 1 }, emptyPassenger)
   )
   const [clientErrors, setClientErrors] = useState({})
+  const attemptCount = useRef(0)
+
+  useTrackOnMount(() => {
+    if (!criteria || !selectedTrip) return
+    trackPassengerDetailsStarted({
+      bookingId,
+      passengerTotalCount: passengerList.length,
+    })
+  })
+
+  // Outcome: server-side (mock-api) validation failures, tracked from the
+  // actual response — never optimistically.
+  useEffect(() => {
+    if (status !== "error" || !error?.fieldErrors) return
+    for (const fieldError of error.fieldErrors) {
+      trackPassengerDetailsValidationFailed({
+        bookingId,
+        fieldName: fieldError.fieldName,
+        errorType: fieldError.errorType,
+        attemptCount: attemptCount.current,
+      })
+    }
+  }, [status, error, bookingId])
 
   useEffect(() => {
     if (status !== "success") return
@@ -67,6 +96,7 @@ export default function PassengersContainer() {
 
   function handleSubmit(event) {
     event.preventDefault()
+    attemptCount.current += 1
 
     const nextClientErrors = {}
     let hasClientErrors = false
@@ -75,11 +105,20 @@ export default function PassengersContainer() {
       if (fieldErrors.length > 0) {
         nextClientErrors[passenger.passengerId] = fieldErrors
         hasClientErrors = true
+        for (const fieldError of fieldErrors) {
+          trackPassengerDetailsValidationFailed({
+            bookingId,
+            fieldName: fieldError.fieldName,
+            errorType: fieldError.errorType,
+            attemptCount: attemptCount.current,
+          })
+        }
       }
     }
     setClientErrors(nextClientErrors)
     if (hasClientErrors) return
 
+    trackPassengerDetailsSubmitted({ bookingId, passengers: passengerList })
     submit({ bookingId, passengers: passengerList })
   }
 
