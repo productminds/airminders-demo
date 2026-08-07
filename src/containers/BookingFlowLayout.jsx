@@ -1,6 +1,23 @@
-import { useCallback, useState } from "react"
-import { Outlet } from "react-router-dom"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { Outlet, useLocation } from "react-router-dom"
 import StepIndicator from "@/components/layout/StepIndicator"
+import { ampli } from "@/ampli"
+import packageJson from "../../package.json"
+
+/**
+ * Screen Viewed: booking_step/screen_name per route. Every step of the
+ * funnel is a child route of this layout, so it's the single place that
+ * sees every navigation — one tracking call here instead of one per
+ * container.
+ */
+const SCREEN_BY_PATH = {
+  "/buscar": { screen_name: "home", booking_step: "search" },
+  "/selecionar": { screen_name: "flight_selection", booking_step: "select" },
+  "/passageiros": { screen_name: "passenger_details", booking_step: "passenger" },
+  "/revisao": { screen_name: "booking_review", booking_step: "review" },
+  "/pagamento": { screen_name: "payment", booking_step: "payment" },
+  "/confirmacao": { screen_name: "confirmation", booking_step: "confirmation" },
+}
 
 /**
  * Owns the flow's step-to-step data (search criteria, results, selected
@@ -14,6 +31,25 @@ export default function BookingFlowLayout() {
   const [selectedTrip, setSelectedTrip] = useState(null)
   const [passengers, setPassengers] = useState(null)
   const [order, setOrder] = useState(null)
+
+  const location = useLocation()
+  const referrerScreen = useRef(undefined)
+
+  useEffect(() => {
+    const screen = SCREEN_BY_PATH[location.pathname]
+    if (!screen) return
+
+    ampli.screenViewed({
+      app_version: packageJson.version,
+      booking_step: screen.booking_step,
+      environment: import.meta.env.DEV ? "development" : "production",
+      locale: navigator.language,
+      platform: "web",
+      referrer_screen: referrerScreen.current,
+      screen_name: screen.screen_name,
+    })
+    referrerScreen.current = screen.screen_name
+  }, [location.pathname])
 
   const resetAfterSearch = useCallback(() => {
     setSelectedTrip(null)

@@ -8,8 +8,12 @@ import PassengersContainer from "@/containers/PassengersContainer"
 import ReviewContainer from "@/containers/ReviewContainer"
 import PaymentContainer from "@/containers/PaymentContainer"
 import ConfirmationContainer from "@/containers/ConfirmationContainer"
+import { ampli, ApiKey } from './ampli'
+
 
 export default function App() {
+  ampli.load({ client: { apiKey: ApiKey.goldemoamplicli } })
+
   return (
     <JourneyProvider>
       <BrowserRouter>
