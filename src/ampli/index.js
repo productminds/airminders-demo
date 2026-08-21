@@ -8,7 +8,7 @@
  * To update run 'ampli pull web'
  *
  * Required dependencies: @amplitude/analytics-browser@^1.3.0
- * Tracking Plan Version: 4
+ * Tracking Plan Version: 5
  * Build: 1.0.0
  * Runtime: browser:javascript-ampli-v2
  *
@@ -70,10 +70,10 @@ export const ApiKey = {
  */
 export const DefaultConfiguration = {
   plan: {
-    version: '4',
+    version: '5',
     branch: 'main',
     source: 'web',
-    versionId: '996739ad-e04c-447b-a58b-42a6bddede94'
+    versionId: '9f161b33-b5dc-4a07-b9a6-bcdb898876f3'
   },
   ...{
     ingestionMetadata: {
@@ -87,6 +87,12 @@ export class Identify {
   constructor(properties) {
     this.event_type = amplitude.Types.SpecialEventType.IDENTIFY;
     this.event_properties = properties;
+  }
+}
+
+export class TesteLogoHomeClicked {
+  constructor() {
+    this.event_type = '[Teste] Logo Home Clicked';
   }
 }
 
@@ -205,6 +211,13 @@ export class PaymentMethodSelected {
 export class PurchaseCompleted {
   constructor(properties) {
     this.event_type = 'Purchase Completed';
+    this.event_properties = properties;
+  }
+}
+
+export class ScreenViewed {
+  constructor(properties) {
+    this.event_type = 'Screen Viewed';
     this.event_properties = properties;
   }
 }
@@ -352,6 +365,19 @@ export class Ampli {
     }
 
     return this.amplitude.track(event, undefined, options);
+  }
+
+  /**
+   * [Teste] Logo Home Clicked
+   *
+   * [View in Tracking Plan](https://data.amplitude.com/productminds/Gol%20Demo%20-%20Ampli%20CLI/events/main/latest/%5BTeste%5D%20Logo%20Home%20Clicked)
+   *
+Event has no description in tracking plan.
+   *
+   * @param {EventOptions} [options] Options for this track call.
+   */
+  testeLogoHomeClicked(options) {
+    return this.track(new TesteLogoHomeClicked(), options);
   }
 
   /**
@@ -765,6 +791,27 @@ export class Ampli {
    */
   purchaseCompleted(properties, options) {
     return this.track(new PurchaseCompleted(properties), options);
+  }
+
+  /**
+   * Screen Viewed
+   *
+   * [View in Tracking Plan](https://data.amplitude.com/productminds/Gol%20Demo%20-%20Ampli%20CLI/events/main/latest/Screen%20Viewed)
+   *
+   * Visualizacao de pagina/tela. Evento transversal disparado em toda navegacao entre telas.
+   *
+   * @param {Object} properties The event's properties.
+   * @param {string} properties.app_version Versao da aplicacao (semver)
+   * @param {'search'|'select'|'passenger'|'review'|'payment'|'confirmation'} [properties.booking_step] Etapa do funil de reserva correspondente a tela
+   * @param {'development'|'staging'|'production'} properties.environment Ambiente de execucao
+   * @param {string} properties.locale Locale do usuario (ex: pt-BR)
+   * @param {'ios'|'android'|'web'} properties.platform Plataforma de origem do evento
+   * @param {string} [properties.referrer_screen] Tela de origem da navegacao
+   * @param {'home'|'search_results'|'flight_selection'|'passenger_details'|'booking_review'|'payment'|'confirmation'} properties.screen_name Identificador da tela visualizada
+   * @param {EventOptions} [options] Options for this track call.
+   */
+  screenViewed(properties, options) {
+    return this.track(new ScreenViewed(properties), options);
   }
 
   /**

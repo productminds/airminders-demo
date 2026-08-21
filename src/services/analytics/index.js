@@ -136,6 +136,10 @@ export function trackLogoClicked({ screenName } = {}) {
   //   },
   // })
 
+  ampli.testeLogoHomeClicked()
+
+  ampli.track("Logo Teste")
+
   ampli.logoClicked({ ...baseProperties(), screen_name: screenName })
 }
 
@@ -441,10 +445,11 @@ export function trackBookingDetailsConfirmed({ bookingId, totalAmount }) {
 export function trackPaymentMethodSelected({ bookingId, method, milesUsedCount }) {
   ampli.paymentMethodSelected({
     ...baseProperties(),
-    booking_id: bookingId,
+    bookingId: bookingId,
     payment_method: method,
     miles_used_count: milesUsedCount,
   })
+
 }
 
 /**
