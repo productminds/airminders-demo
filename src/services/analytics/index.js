@@ -128,15 +128,15 @@ export function initAnalytics() {
  * @param {string} [params.screenName] - screen where the logo was clicked
  */
 export function trackLogoClicked({ screenName } = {}) {
-  ampli.track({
-    event_type: "Logo Clicked",
-    event_properties: {
-      ...baseProperties(),
-      screen_name: screenName,
-    },
-  })
+  // ampli.track({
+  //   event_type: "Logo Clicked",
+  //   event_properties: {
+  //     ...baseProperties(),
+  //     screen_name: screenName,
+  //   },
+  // })
 
-  ampli.logoHomeClicked()
+  ampli.logoClicked({ ...baseProperties(), screen_name: screenName })
 }
 
 /**
