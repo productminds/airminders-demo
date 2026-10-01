@@ -222,6 +222,12 @@ export class ScreenViewed {
   }
 }
 
+export class TesteGran {
+  constructor() {
+    this.event_type = 'Teste Gran';
+  }
+}
+
 export class TripSelectionCompleted {
   constructor(properties) {
     this.event_type = 'Trip Selection Completed';
@@ -812,6 +818,19 @@ Event has no description in tracking plan.
    */
   screenViewed(properties, options) {
     return this.track(new ScreenViewed(properties), options);
+  }
+
+  /**
+   * Teste Gran
+   *
+   * [View in Tracking Plan](https://data.amplitude.com/productminds/Gol%20Demo%20-%20Ampli%20CLI/events/main/latest/Teste%20Gran)
+   *
+Event has no description in tracking plan.
+   *
+   * @param {EventOptions} [options] Options for this track call.
+   */
+  testeGran(options) {
+    return this.track(new TesteGran(), options);
   }
 
   /**

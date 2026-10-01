@@ -1,6 +1,7 @@
 import * as amplitude from "@amplitude/analytics-browser"
 import { sessionReplayPlugin } from "@amplitude/plugin-session-replay-browser"
 import { ampli, ApiKey, DefaultConfiguration } from "../../ampli"
+import { DataLayerDestinationPlugin } from "./dataLayerPlugin"
 import { findAirport } from "../mock-api/data/airports"
 import { findFareFamily, findOffer } from "../../lib/pricing"
 import packageJson from "../../../package.json"
@@ -118,6 +119,12 @@ export function initAnalytics() {
     },
   })
   ampli.load({ client: { instance } })
+
+  // Mirror every tracking-plan event into window.dataLayer so GTM-fed
+  // providers (GA4, media pixels) consume the same taxonomy as Amplitude,
+  // from a single instrumentation. Added after load so it joins the same
+  // SDK timeline; a push failure here never affects the Amplitude send.
+  instance.add(new DataLayerDestinationPlugin())
 }
 
 /**
@@ -449,7 +456,6 @@ export function trackPaymentMethodSelected({ bookingId, method, milesUsedCount }
     payment_method: method,
     miles_used_count: milesUsedCount,
   })
-
 }
 
 /**
